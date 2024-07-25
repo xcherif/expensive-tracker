@@ -16,47 +16,97 @@ class _ExpensesState extends State<Expenses> {
         title: 'Flutter course',
         amount: 19.959,
         date: DateTime.now(),
-        category: Category.work),
+      category: Category.work,
+    ),
     Expense(
         title: 'Cinema',
         amount: 20.0,
         date: DateTime.now(),
-        category: Category.leisure),
+      category: Category.leisure,
+    ),
   ];
 
   void _openAddExpenseOverlay() {
-    showModalBottomSheet(
+    showModalBottomSheet(isScrollControlled: true,
       context: context,
-      builder: (ctx) => NewExpense(
-        onAddExpense: addExpense,
+      builder: (ctx) => NewExpense(onAddExpense: _addExpense,
       ),
     );
   }
 
-  void addExpense(Expense newExpense){
+  void _addExpense(Expense newExpense) {
     setState(() {
       _registeredExpenses.add(newExpense);
     });
   }
+
+  void _removeExpense(Expense oldExpense) {
+    final expenseIndex = _registeredExpenses.indexOf(oldExpense);
+    setState(() {
+      _registeredExpenses.remove(oldExpense);
+    });
+
+    var title = oldExpense.title;
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
+          child: Text('Voulez-vous supprimer $title ?'),
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            setState(() {
+              _registeredExpenses.insert(expenseIndex, oldExpense);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    Widget mainContent =
+        const Center(child: Text('No expenses found. Start adding some!'));
+
+    if (_registeredExpenses.isNotEmpty) {
+      mainContent = ExpensesList(
+        expenses: _registeredExpenses,
+        onRemoveExpense: _removeExpense,
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flutter Expense Tracker'),
         actions: [
           IconButton(
-              onPressed: _openAddExpenseOverlay, icon: const Icon(Icons.add)),
-        ],
-      ),
-      body: Column(
-        children: [
-          const Text('The Chart'), // const Text('Expenses ...'),
-          Expanded(
-            child: ExpensesList(
-              expenses: _registeredExpenses,
-            ),
+            onPressed: _openAddExpenseOverlay,
+            icon: const Icon(Icons.add),
           ),
         ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 16.0),
+        child: Column(
+          children: [
+            Text(
+              'The Chart',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(
+              height: 5.0,
+            ),
+            // const Text('Expenses ...'),
+            Expanded(
+              child: mainContent,
+            ),
+          ],
+        ),
       ),
     );
   }
